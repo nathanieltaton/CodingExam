@@ -1,0 +1,297 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@model ShopViewModel
+@{
+}
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+<h1>Shop2</h1>
+<div>
+    <div class="mt-2">
+        <datalist id="dataList">
+            @foreach(var x in Model.Products)
+            {
+                <option value ="@x.ProductName" id="@x.ProductId"></option>
+            }
+        </datalist>
+        <label class="form-label">Search Product</label>
+        <input type="text" class="form-control" list="dataList" id="Product"/>
+    </div>
+
+    <button class="btn btn-primary" type="submit" id="btnSearch">Search</button>
+
+    <div class="mt-2">
+        <label class="form-label">Product Id</label>
+        <input type="text" id="ProductId" class="form-control" />
+    </div>
+
+    <div class="mt-2">
+        <label class="form-label">Cost</label>
+        <input type="text" id="Cost" class="form-control" />
+    </div>
+
+    <div class="mt-2">
+        <label class="form-label">Product Name</label>
+        <input type="text" id="ProductName" class="form-control" />
+    </div>
+
+    <div class="mt-2">
+        <label class="form-label">Quantity</label>
+        <input type="text" class="form-control" id="Quantity"/>
+    </div>
+
+    <button class="btn btn-primary" type="submit" id ="btnAddCart">Add to Cart</button>
+</div>
+
+<div>
+    <table class ="table" id="cartTable">
+        <thead>
+            <tr>
+                <td>ProductId</td>
+                <td>Product Name</td>
+                <td>Cost</td>
+                <td>Quantity</td>
+                <td>Amount</td>
+                <td>Action</td>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                  
+            </tr>
+
+        </tbody>
+    <table/>
+
+        <button class="btn btn-primary" type="submit" id="btnSave">Save</button>
+</div>
+
+<div>
+    <div class="mt-2">
+        <label class="form-label">Total Amount</label>
+        <input type="text" id="TotalAmount" class="form-control" />
+    </div>
+
+    <div class="mt-2">
+        <label class="form-label">Cash</label>
+        <input type="text" id="Cash" class="form-control" />
+    </div>
+
+    <div class="mt-2">
+        <label class="form-label">Change</label>
+        <input type="text" id="Change" class="form-control" />
+    </div>
+</div>
+
+@section Scripts{
+    <script>
+
+        $(window).on("load", function () {
+
+
+            $("#btnSearch").click(function () {
+                var productSelected = document.getElementById("Product").value;
+                GetProductDetails(productSelected);
+            });
+
+            $("#btnAddCart").click(function () {
+                if (CheckAddToCart()) {
+                    AddToCart();
+                }
+            });
+
+            $("#btnAddCart").click(function () {
+                if (CheckAddToCart()) {
+                    AddToCart();
+                }
+                DisplayTotalAmount();
+            });
+
+            $("#btnSave").click(function () {
+                var cash = parseFloat(document.getElementById("Cash").value)
+                var totalAmount = parseFloat(document.getElementById("TotalAmount").value)
+                var change = document.getElementById("Change").value;
+                change.value = cash - totalAmount;
+                if(cash>0 && totalAmount > 0 && change > 0)
+                    SaveCart(cash,totalAmount,change);
+                else
+                    alert("Error");
+            });
+
+            $("#Cash").on("input",function(){
+                var cash = parseInt(document.getElementById("Cash").value)
+                var totalAmount = parseInt(document.getElementById("TotalAmount").value)
+                document.getElementById("Change").value = cash-totalAmount;
+            })
+            
+        });
+
+       
+
+        document.addEventListener('click', function (e) {
+            if (e.target && e.target.className == 'delete') {
+                var row = e.target.parentNode.parentNode;
+                row.parentNode.removeChild(row);
+            }
+        });
+
+        function DisplayDetails(productDetails)
+        {
+            document.getElementById("ProductName").value = productDetails.productName;
+            document.getElementById("ProductId").value = productDetails.id;
+            document.getElementById("Cost").value = productDetails.cost;
+        }
+
+        function CheckAddToCart()
+        {
+            var productName = document.getElementById("ProductName").value;
+            var productId = document.getElementById("ProductId").value;
+            var cost = document.getElementById("Cost").value;
+            var quantity = document.getElementById("Quantity").value;
+            if(productName.length > 0 && productId.length > 0 && cost.length > 0 && quantity.length > 0)
+                return true;
+
+            return false;
+        }
+        
+        function AddToCart() {
+            var productId = document.getElementById("ProductId");
+            var productName = document.getElementById("ProductName");
+            var cost = document.getElementById("Cost");
+            var quantity = document.getElementById("Quantity");
+            var table = document.getElementById("cartTable");
+            const elems = new Array(productName, productId, cost, quantity);
+          
+            var values = GetAllValues();
+            var check = values.indexOf(productName.value);
+
+            if (check > -1) {
+                var tdAmount = document.getElementById("amount" + '-' + productId.value);
+                var tdQuantity = document.getElementById("Quantity" + '-' + productId.value);
+                var finalQuantity = parseInt(tdQuantity.innerText) + parseInt(quantity.value);
+
+                tdQuantity.textContent = finalQuantity;
+                tdAmount.textContent = parseInt(cost.value) * finalQuantity;
+            }
+            else {
+                var row = table.insertRow(1);
+                row.setAttribute("id", productId.value); 
+                for (var a = 0; a < 6; a++) {
+                    if (a == 4) {
+                      
+                        var cell = row.insertCell(a);
+                        cell.id = 'amount' + '-' + elems[1].value;
+                        cell.setAttribute("contenteditable", true);
+                        var amount = cost.value * quantity.value
+                        cell.innerHTML = amount;
+                    }
+                    else if (a == 5) {
+                        var cell = row.insertCell(a);
+                        cell.id = elems[1].value;
+                        cell.innerHTML = '<a href="#" class="delete">Delete</a>';
+
+                    }
+                    else {
+                        var cell = row.insertCell(a);
+                        cell.id = elems[a].id + '-' + elems[1].value;
+                        cell.innerHTML = elems[a].value;
+                    }
+                }
+            }
+            
+        }
+
+        function GetAllValues()
+        {
+            var values = []
+            $('#cartTable tbody tr').each(function(){
+                $(this).find('td').each(function () {
+                    values.push($(this).text());
+                });
+            })
+            return values;
+        }
+
+         function GetProductDetails(product)
+         {
+            $.ajax({
+                type: 'GET',
+                url: "/ShopController/GetProductDetails",
+                dataType: 'json',
+                data: { productName: product },
+                success: function (data) {
+                     if (data.responseText != "failed")
+                        DisplayDetails(data.responseText);
+                     else
+                        alert("No such product");
+                        
+                },
+                error: function (ex) {
+                    console.log(ex.Message);
+                }
+            });
+         }
+
+        function SaveCart(cash,totalAmount,change)
+        {
+            var totalValue =
+            {
+                Cash: cash,
+                TotalAmount: totalAmount,
+                Change: change
+            };
+
+            console.log(totalValue);
+            var formData = new FormData();
+            formData.append("Cash",cash);
+            formData.append("TotalAmount",totalAmount);
+            formData.append("Change", change);
+
+            var tds = document.querySelectorAll("tr")
+
+            var rowsWithId = Array.from(tds).filter(function (row) {
+                return row.id !== '';
+            });
+          
+            for (var a = 0; a < rowsWithId.length; a++)
+            {
+                var specificRow = document.getElementById(rowsWithId[a].id);
+                var tdElements = specificRow.querySelectorAll('td');
+                formData.append("ProductName", document.getElementById('ProductName' + '-' + specificRow.id).innerText);
+                formData.append("Quantity", parseInt(document.getElementById('Quantity' + '-' + specificRow.id).innerText));
+                formData.append("Cost", parseInt((document.getElementById('Cost' + '-' + specificRow.id).innerText)));
+                formData.append("ProductId", parseInt((document.getElementById('ProductId' + '-' + specificRow.id).innerText)))
+            }
+
+            
+            $.ajax({
+                type: 'POST',
+                url: "/ShopController/SaveCart",
+                dataType: 'json',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function (data) {
+
+                },
+                error: function (ex) {
+                    console.log(ex.Message);
+                }
+            });
+
+        }
+
+        function DisplayTotalAmount()
+        {
+            var totalAmount = 0;
+            var elements = document.querySelectorAll('[id^="amount-"]');
+            for(var a =0;a<elements.length;a++)
+            {
+                console.log(elements[a].id);
+                totalAmount += parseInt(document.getElementById(elements[a].id).innerText);
+            }
+            document.getElementById("TotalAmount").value = totalAmount;
+        }
+    </script>
+}
+
